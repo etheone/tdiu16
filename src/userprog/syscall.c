@@ -46,16 +46,41 @@ syscall_handler (struct intr_frame *f)
 {
   int32_t* esp = (int32_t*)f->esp;
   
-  switch ( 0 /* retrive syscall number */ )
-  {
-    default:
+  switch ( esp[0] )
     {
-      printf ("Executed an unknown system call!\n");
+    case SYS_HALT:
+      {
+	printf("# DEBUG_HELP : HALT RUN\n");
+	power_off ();
+	printf("# DEBUG_HELP : SHOULD NEVER RUN\n");
+      }
+    case SYS_EXIT:
+      {
+	printf("# DEBUG_HELP : EXIT RUN\n");
+        thread_exit ();
+	break;
+      }
+    case SYS_READ:
+      {
+	printf("# DEBUG_HELP : READ IS CALLED\n");
+	int size = esp[3];
+	printf("The size to read is : %d\n", size);
+	//input_getc();
+	break;
+      }
+    case SYS_WRITE:
+      {
+	printf("# DEBUG_HELP : WRITE IS CALLED\n");
+	break;
+      }
+    default:
+      {
+	printf ("Executed an unknown system call!\n");
       
-      printf ("Stack top + 0: %d\n", esp[0]);
-      printf ("Stack top + 1: %d\n", esp[1]);
+	printf ("Stack top + 0: %d\n", esp[0]);
+	printf ("Stack top + 1: %d\n", esp[1]);
       
-      thread_exit ();
+	thread_exit ();
+      }
     }
-  }
 }
