@@ -31,5 +31,28 @@
    (probably when removed from the list(s)).
  */
 
+#define MAP_SIZE 16
+struct map
+{
+  struct file* files[MAP_SIZE];
+};
+
+/* c-constructor for map */
+void map_init(struct map* m);
+
+/* insert file* f into map m, retirms a foöe descroåtpr */
+int map_insert(struct map* m, struct file* f);
+
+/* find file* f given a fd, NILL is returned if not found */
+struct file* map_find(struct map* m, int fd);
+
+/* removes and returns file* f for file descriptor fd, NULL returned if NOT found */
+struct file* map_remove(struct map* m, int fd);
+
+/* removes all files in map m */
+void map_remove_all(struct map* m);
+
+
+
 
 #endif

@@ -91,6 +91,10 @@ struct thread
     uint8_t *stack;                     /* Saved stack pointer. */
     int priority;                       /* Priority. */
 
+    /* To keep track of open files */
+    struct map* file_map;
+    
+
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
 
