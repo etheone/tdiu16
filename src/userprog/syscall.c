@@ -23,6 +23,8 @@ syscall_init (void)
 }
 
 
+
+
 /* This array defined the number of arguments each syscall expects.
    For example, if you want to find out the number of arguments for
    the read system call you shall write:
@@ -63,9 +65,6 @@ syscall_handler (struct intr_frame *f)
 
     case SYS_CREATE:
     {
-      printf("# DEBIG_HELP : CREATE RUN\n");
-      printf("Filename: %s \n", esp[1]);
-      printf("Size is: %d \n", esp[2]);
       if(filesys_create((char*)esp[1], esp[2])) {
 	f->eax = true;
       } else {
@@ -76,17 +75,13 @@ syscall_handler (struct intr_frame *f)
 
     case SYS_OPEN:
     {
-      printf("# DEBUG_HELP : OPEN IS CALLED\n");
       char *filename = esp[1];
-      struct file *fileStruct;
-      printf("# DEBUG_HELP : TRYING TO OPEN THE FILE\n");
-      fileStruct = filesys_open(filename);
-      printf("# DEBUG_HELP : GETTING CURRENT THREAD\n");
+      struct file *fileStruct = filesys_open(filename);
       struct thread *currentThread = thread_current();
-      printf("# DEBUG_HELP : INSERTING FILE INTO FILE_MAP\n");
+      
       if(fileStruct != NULL) {
 	int fd = map_insert(&(currentThread->file_map), fileStruct);
-	printf("# DEBUG_HELP : FD IS %d \n", fd);
+
 	f->eax = fd;	
       } else {
 	f->eax = -1;
@@ -116,7 +111,6 @@ syscall_handler (struct intr_frame *f)
     
     case SYS_READ:
       {
-	//printf("# DEBUG_HELP : READ IS CALLED\n");
 	int size = esp[3];
 	char* buffer = (char*)esp[2];
 	if (esp[1] == STDIN_FILENO) 
@@ -129,14 +123,12 @@ syscall_handler (struct intr_frame *f)
 	    {
 	      key = '\n';
 	    }
-	    //printf("The key pressed: %c\n", key);
 	    putbuf (&key, 1);
 	    buffer[i] = key;
 	  }
 	  f->eax = i;
 	} else if (esp[1] == STDOUT_FILENO)
 	{
-	  /* not STDIN_FILENO, return -1 for now */
 	  f->eax = -1;
 	} else
 	{
@@ -172,11 +164,56 @@ syscall_handler (struct intr_frame *f)
 	  } else {
 	    f->eax = -1;
 	  }
-	    
-	    //f->eax = -1;
+	  
 	}
 	break;
       }
+
+    case SYS_SEEK:
+    {
+      //printf("DEBUG HELP : IN SEEK \n");
+      //map_find to get struct file*
+      struct thread *currentThread = thread_current();
+      struct file* fileStruct = map_find(&(currentThread->file_map), esp[1]);
+      if(fileStruct != NULL)
+      {
+	file_seek(fileStruct, esp[2]);
+      }
+      
+      break;
+    }
+
+    case SYS_TELL:
+    {
+      // printf("DEBUG HELP : IN TELL \n");
+      //map_find to get struct file*
+      struct thread *currentThread = thread_current();
+      struct file* fileStruct = map_find(&(currentThread->file_map), esp[1]);
+      if(fileStruct != NULL)
+      {
+	f->eax = file_tell(fileStruct);
+      } else {
+	f->eax = -1;
+      }
+      break;
+    }
+
+    case SYS_FILESIZE:
+    {
+      //printf("DEBUG HELP : IN FILESIZE \n");
+      //map_find to get struct file*
+      struct thread *currentThread = thread_current();
+      struct file* fileStruct = map_find(&(currentThread->file_map), esp[1]);
+      if(fileStruct != NULL)
+      {
+	f->eax = file_length(fileStruct);
+      } else {
+	f->eax = -1;
+      }
+      
+      break;
+    }
+    
     default:
     {
       printf ("Executed an unknown system call!\n");
