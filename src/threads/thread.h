@@ -92,7 +92,7 @@ struct thread
     int priority;                       /* Priority. */
 
     /* To keep track of open files */
-    struct map* file_map;
+    struct map file_map;
     
 
     /* Shared between thread.c and synch.c. */

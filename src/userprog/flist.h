@@ -40,10 +40,10 @@ struct map
 /* c-constructor for map */
 void map_init(struct map* m);
 
-/* insert file* f into map m, retirms a foöe descroåtpr */
+/* insert file* f into map m, returns a filedescriptor */
 int map_insert(struct map* m, struct file* f);
 
-/* find file* f given a fd, NILL is returned if not found */
+/* find file* f given a fd, NULL is returned if not found */
 struct file* map_find(struct map* m, int fd);
 
 /* removes and returns file* f for file descriptor fd, NULL returned if NOT found */

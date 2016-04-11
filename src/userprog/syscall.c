@@ -70,13 +70,48 @@ syscall_handler (struct intr_frame *f)
 	f->eax = true;
       } else {
 	f->eax = false;
-      }   
+      }
+      break;
     }
 
     case SYS_OPEN:
     {
+      printf("# DEBUG_HELP : OPEN IS CALLED\n");
+      char *filename = esp[1];
+      struct file *fileStruct;
+      printf("# DEBUG_HELP : TRYING TO OPEN THE FILE\n");
+      fileStruct = filesys_open(filename);
+      printf("# DEBUG_HELP : GETTING CURRENT THREAD\n");
+      struct thread *currentThread = thread_current();
+      printf("# DEBUG_HELP : INSERTING FILE INTO FILE_MAP\n");
+      if(fileStruct != NULL) {
+	int fd = map_insert(&(currentThread->file_map), fileStruct);
+	printf("# DEBUG_HELP : FD IS %d \n", fd);
+	f->eax = fd;	
+      } else {
+	f->eax = -1;
+      }
+      break;
+    }
+
+    case SYS_REMOVE:
+    {
+      f->eax = filesys_remove(esp[1]);
       
+      break;
+    }
+
+    case SYS_CLOSE:
+    {
+      int fd = esp[1];
+      struct thread *currentThread = thread_current();
+      struct file* fileToClose = map_remove(&(currentThread->file_map), fd);
+      if(fileToClose != NULL)
+      {
+	file_close(fileToClose);
+      }
       
+      break;
     }
     
     case SYS_READ:
@@ -85,38 +120,61 @@ syscall_handler (struct intr_frame *f)
 	int size = esp[3];
 	char* buffer = (char*)esp[2];
 	if (esp[1] == STDIN_FILENO) 
+	{
+	  int i;
+	  for(i = 0; i < size; i++)
 	  {
-	    int i;
-	    for(i = 0; i < size; i++)
-	      {
-		char key = (char)input_getc();
-		if (key == '\r')
-		  {
-		    key = '\n';
-		  }
-		//printf("The key pressed: %c\n", key);
-		putbuf (&key, 1);
-		buffer[i] = key;
-	      }
-	    f->eax = i;
-	  } else
-	  {
-	    /* not STDIN_FILENO, return -1 for now */
+	    char key = (char)input_getc();
+	    if (key == '\r')
+	    {
+	      key = '\n';
+	    }
+	    //printf("The key pressed: %c\n", key);
+	    putbuf (&key, 1);
+	    buffer[i] = key;
+	  }
+	  f->eax = i;
+	} else if (esp[1] == STDOUT_FILENO)
+	{
+	  /* not STDIN_FILENO, return -1 for now */
+	  f->eax = -1;
+	} else
+	{
+	  struct thread *currentThread = thread_current();
+	  int fd = esp[1];
+	  struct file* fileStruct = map_find(&(currentThread->file_map), fd);
+	  if(fileStruct != NULL) {
+	    f->eax = file_read(fileStruct, esp[2], esp[3]);
+	  } else {
 	    f->eax = -1;
 	  }
+	}
+	  
 	break;
       }
     case SYS_WRITE:
       {
 	if (esp[1] == STDOUT_FILENO)
-	  {
+	{
 	    putbuf((char*)esp[2], esp[3]);
 	    f->eax = esp[3];
-	  } else
-	  {
-	    /* not STDIOUT_FILENO, return -1 for now */
+	} else if(esp[1] == STDIN_FILENO)
+	{
+	  f->eax = -1;
+	} else
+	{
+	    /* NOT STDOUT_FILENO, FILE == TRUE */
+	  struct thread *currentThread = thread_current();
+	  int fd = esp[1];
+	  struct file* fileStruct = map_find(&(currentThread->file_map), fd);
+	  if(fileStruct != NULL) {
+	    f->eax = file_write(fileStruct, esp[2], esp[3]);
+	  } else {
 	    f->eax = -1;
 	  }
+	    
+	    //f->eax = -1;
+	}
 	break;
       }
     default:

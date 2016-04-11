@@ -114,6 +114,7 @@ int main(int argc, char* argv[])
     
     printf ("Will try to open 'test.txt'\n");
     id = open("test.txt");
+    printf("ID is %d", id);
     verify ( id > 1 );
   }
   end ( "* -------------------- press enter ---------------------- *" );
