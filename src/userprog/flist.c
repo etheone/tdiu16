@@ -56,5 +56,16 @@ struct file* map_remove(struct map* m, int fd)
 
 void map_remove_all(struct map* m)
 {
-
+  if(m != NULL)
+  {
+    int i;
+    for(i = 0; i < MAP_SIZE; i++) {
+      if(m->files[i] != NULL) {
+	file_close(m->files[i]);
+      }
+    }
+  } else {
+    printf("file_map is null");
+  }
+  
 }  

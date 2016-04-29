@@ -12,7 +12,9 @@
 #include "threads/init.h"
 #include "userprog/pagedir.h"
 #include "userprog/process.h"
+#include "userprog/plist.h"
 #include "devices/input.h"
+#include "devices/timer.h"
 
 static void syscall_handler (struct intr_frame *);
 
@@ -21,8 +23,6 @@ syscall_init (void)
 {
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
 }
-
-
 
 
 /* This array defined the number of arguments each syscall expects.
@@ -59,6 +59,12 @@ syscall_handler (struct intr_frame *f)
     case SYS_EXIT:
     {
       printf("# DEBUG_HELP : EXIT RUN\n");
+      struct thread *currentThread = thread_current();
+      map_remove_all(&(currentThread->file_map));
+      
+      struct process_info* pi = process_find(currentThread->tid, &plist);
+      pi->exit_status = (int) esp[1];
+      
       thread_exit ();
       break;
     }
@@ -75,7 +81,7 @@ syscall_handler (struct intr_frame *f)
 
     case SYS_OPEN:
     {
-      char *filename = esp[1];
+      char *filename = (char*)esp[1];
       struct file *fileStruct = filesys_open(filename);
       struct thread *currentThread = thread_current();
       
@@ -212,6 +218,21 @@ syscall_handler (struct intr_frame *f)
       }
       
       break;
+    }
+
+    case SYS_PLIST:
+    {
+      plist_print(&plist);
+    }
+
+    case SYS_EXEC:
+    {
+      process_execute((char*)esp[1]);
+    }
+
+    case SYS_SLEEP:
+    {
+      timer_sleep((int64_t)esp[1]);
     }
     
     default:

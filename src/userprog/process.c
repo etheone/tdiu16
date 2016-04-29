@@ -57,6 +57,7 @@ struct parameters_to_start_process
   char* command_line;
   struct semaphore sema_load;
   bool success_load;
+  pid_t parent_id;
 };
 
 static void
@@ -90,7 +91,7 @@ process_execute (const char *command_line)
   arguments.command_line = malloc(command_line_size);
   strlcpy(arguments.command_line, command_line, command_line_size);
 
-
+  arguments.parent_id = thread_current()->tid;
   strlcpy_first_word (debug_name, command_line, 64);
   
   /* SCHEDULES function `start_process' to run (LATER) */
@@ -176,9 +177,11 @@ start_process (struct parameters_to_start_process* parameters)
        "pretend" the arguments are present on the stack. A normal
        C-function expects the stack to contain, in order, the return
        address, the first argument, the second argument etc. */
-    
+    struct process_info process_to_insert = { .free = false, .proc_id = thread_current()->tid, .parent_id = parameters->parent_id, .exit_status = 0, .alive = true, .parent_alive = true };
+    process_insert(&process_to_insert, &plist);
     //HACK if_.esp -= 12; /* Unacceptable solution. */
     if_.esp = setup_main_stack(parameters->command_line, if_.esp);
+    
       
     /* The stack and stack pointer should be setup correct just before
        the process start, so this is the place to dump stack content

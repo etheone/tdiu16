@@ -25,6 +25,7 @@
 #include "userprog/exception.h"
 #include "userprog/gdt.h"
 #include "userprog/syscall.h"
+#include "userprog/plist.h"
 #include "userprog/tss.h"
 #else
 #include "tests/threads/tests.h"
@@ -109,6 +110,7 @@ main (void)
   syscall_init ();
 #endif
 
+  plist_init(&plist);
   /* Start thread scheduler and enable interrupts. */
   thread_start ();
   serial_init_queue ();
