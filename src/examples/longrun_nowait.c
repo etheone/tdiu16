@@ -75,7 +75,7 @@ int main(int argc, char* argv[])
     int ticks = 10 * 1000 * 1000 * j / repeat;
     
     snprintf(cmd, BUF_SIZE, "generic_parent %s %i %i", "dummy", j*simul, simul);
-    
+
     exec(cmd);
     
 //    plist();

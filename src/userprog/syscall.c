@@ -97,7 +97,7 @@ syscall_handler (struct intr_frame *f)
 
     case SYS_REMOVE:
     {
-      f->eax = filesys_remove(esp[1]);
+      f->eax = filesys_remove((void*)esp[1]);
       
       break;
     }
@@ -142,7 +142,7 @@ syscall_handler (struct intr_frame *f)
 	  int fd = esp[1];
 	  struct file* fileStruct = map_find(&(currentThread->file_map), fd);
 	  if(fileStruct != NULL) {
-	    f->eax = file_read(fileStruct, esp[2], esp[3]);
+	    f->eax = file_read(fileStruct, (void*)esp[2], esp[3]);
 	  } else {
 	    f->eax = -1;
 	  }
@@ -166,7 +166,7 @@ syscall_handler (struct intr_frame *f)
 	  int fd = esp[1];
 	  struct file* fileStruct = map_find(&(currentThread->file_map), fd);
 	  if(fileStruct != NULL) {
-	    f->eax = file_write(fileStruct, esp[2], esp[3]);
+	    f->eax = file_write(fileStruct, (void*)esp[2], esp[3]);
 	  } else {
 	    f->eax = -1;
 	  }
@@ -223,16 +223,19 @@ syscall_handler (struct intr_frame *f)
     case SYS_PLIST:
     {
       plist_print(&plist);
+      break;
     }
 
     case SYS_EXEC:
     {
       process_execute((char*)esp[1]);
+      break;
     }
 
     case SYS_SLEEP:
     {
       timer_sleep((int64_t)esp[1]);
+      break;
     }
     
     default:

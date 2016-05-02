@@ -47,6 +47,8 @@ uint32_t *base_page_dir;
 static bool format_filesys;
 #endif
 
+struct list plist;
+
 /* -q: Power off after kernel tasks complete? */
 bool power_off_when_done = false;
 /* -Q: Force power off by klaar@ida... */

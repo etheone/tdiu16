@@ -3,7 +3,7 @@
 
 #include "plist.h"
 
-
+//struct list plist;
 
 void plist_init(struct list* plist)
 {
@@ -12,6 +12,7 @@ void plist_init(struct list* plist)
 
 pid_t process_insert(struct process_info* process_to_insert, struct list* plist)
 {
+  printf("\n\n#### Inserting a process in the list plist\n");
   struct plist_elem* plist_elem = (struct plist_elem*) malloc(sizeof(struct plist_elem));
   plist_elem->pinfo = *process_to_insert;
 

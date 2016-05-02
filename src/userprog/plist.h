@@ -33,7 +33,8 @@
 
 #define pid_t int
 
-struct list plist;
+/* This list is defined in '/threads/init.c'. */
+extern struct list plist;
 
 struct process_info
 {
