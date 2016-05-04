@@ -20,6 +20,7 @@
 #include "threads/palloc.h"
 #include "threads/pte.h"
 #include "threads/thread.h"
+#include "threads/synch.h"
 #ifdef USERPROG
 #include "userprog/process.h"
 #include "userprog/exception.h"
@@ -48,6 +49,7 @@ static bool format_filesys;
 #endif
 
 struct list plist;
+struct semaphore sema_plist;
 
 /* -q: Power off after kernel tasks complete? */
 bool power_off_when_done = false;
@@ -113,6 +115,7 @@ main (void)
 #endif
 
   plist_init(&plist);
+  sema_init(&sema_plist, 1);
   /* Start thread scheduler and enable interrupts. */
   thread_start ();
   serial_init_queue ();
@@ -223,9 +226,9 @@ read_command_line (void)
   printf ("Kernel command line:");
   for (i = 0; i < argc; i++)
     if (strchr (argv[i], ' ') == NULL)
-      printf (" %s", argv[i]);
+      printf ("%s", argv[i]);
     else
-      printf (" '%s'", argv[i]);
+      printf ("'%s'", argv[i]);
   printf ("\n");
 
   return argv;
@@ -388,7 +391,7 @@ power_off (void)
   const char s[] = "Shutdown";
   const char *p;
 
-  printf ("# Preparing to power off...\n");
+  printf ("Preparing to power off...\n");
   DEBUG_thread_poweroff_check( force_off_when_done );
 
 #ifdef FILESYS

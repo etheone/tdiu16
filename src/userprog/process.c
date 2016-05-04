@@ -177,8 +177,11 @@ start_process (struct parameters_to_start_process* parameters)
        "pretend" the arguments are present on the stack. A normal
        C-function expects the stack to contain, in order, the return
        address, the first argument, the second argument etc. */
-    struct process_info process_to_insert = { .free = false, .proc_id = thread_current()->tid, .parent_id = parameters->parent_id, .exit_status = 0, .alive = true, .parent_alive = true };
+    struct process_info process_to_insert = { .free = false, .proc_id = thread_current()->tid, .parent_id = parameters->parent_id, .exit_status = -1, .alive = true, .parent_alive = true, .status_read = false };
+//    sema_init(&process_to_insert.sema_wait, 0);
+    sema_down(&sema_plist);
     process_insert(&process_to_insert, &plist);
+    sema_up(&sema_plist);
     //HACK if_.esp -= 12; /* Unacceptable solution. */
     if_.esp = setup_main_stack(parameters->command_line, if_.esp);
     
@@ -232,13 +235,29 @@ process_wait (int child_id)
 {
   int status = -1;
   struct thread *cur = thread_current ();
-
+  
   debug("%s#%d: process_wait(%d) ENTERED\n",
         cur->name, cur->tid, child_id);
   /* Yes! You need to do something good here ! */
+  printf("# CHILD ID: %d", child_id);
+  struct process_info* pi = process_find(child_id, &plist);
+  if(pi != NULL && pi->parent_id == thread_current()->tid) {
+    // if(!pi->status_read) {
+    sema_down(&pi->sema_wait);
+    status = pi->exit_status;
+    sema_down(&sema_plist);
+    pi->status_read = true;
+    plist_cleanup(&plist);
+    sema_up(&sema_plist);
+      //}
+    printf("# READING STATUS OF PROCESS: %d\n", child_id);
+
+    //remove_child_process_after_read_exit(child_id, &plist);
+  }
+  
   debug("%s#%d: process_wait(%d) RETURNS %d\n",
         cur->name, cur->tid, child_id, status);
-  
+
   return status;
 }
 
@@ -270,6 +289,11 @@ process_cleanup (void)
    * that may sometimes poweroff as soon as process_wait() returns,
    * possibly before the prontf is completed.)
    */
+  struct process_info* pi = process_find(cur->tid, &plist);
+  if(pi != NULL) {
+    status = pi->exit_status;
+  }
+  
   printf("%s: exit(%d)\n", thread_name(), status);
   
   /* Destroy the current process's page directory and switch back
@@ -286,7 +310,14 @@ process_cleanup (void)
       cur->pagedir = NULL;
       pagedir_activate (NULL);
       pagedir_destroy (pd);
-    }  
+    }
+
+  //plist_print(&plist);
+  //Remove dead processes from plist
+  sema_down(&sema_plist);
+  plist_cleanup(&plist); 
+  //plist_print(&plist);
+  sema_up(&sema_plist);
   debug("%s#%d: process_cleanup() DONE with status %d\n",
         cur->name, cur->tid, status);
 }

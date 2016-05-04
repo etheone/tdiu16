@@ -3,6 +3,7 @@
 
 #include <list.h>
 #include <../threads/malloc.h>
+#include <../threads/synch.h>
 
 
 /* Place functions to handle a running process here (process list).
@@ -35,6 +36,7 @@
 
 /* This list is defined in '/threads/init.c'. */
 extern struct list plist;
+extern struct semaphore sema_plist;
 
 struct process_info
 {
@@ -42,17 +44,21 @@ struct process_info
   pid_t proc_id;
   pid_t parent_id;
   int exit_status;
+  bool status_read;
   bool alive;
   bool parent_alive;
-  
+  struct semaphore sema_wait;
 };
 
 struct plist_elem
 {
   struct process_info pinfo;
   struct list_elem elem;
+  
  
 };
+
+void remove_child_process_after_read_exit(pid_t id, struct list* plist);
 
 void plist_init(struct list* plist);
 
@@ -63,6 +69,8 @@ void process_remove(pid_t id, struct list* plist);
 struct process_info* process_find(pid_t id, struct list* plist);
 
 void plist_print(struct list* plist);
+
+void plist_cleanup(struct list* plist);
 
 
 

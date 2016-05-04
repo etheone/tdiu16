@@ -10,6 +10,9 @@
 #include "filesys/file.h"
 #include "threads/vaddr.h"
 #include "threads/init.h"
+//Added this line
+#include "threads/synch.h"
+///////////////
 #include "userprog/pagedir.h"
 #include "userprog/process.h"
 #include "userprog/plist.h"
@@ -61,10 +64,20 @@ syscall_handler (struct intr_frame *f)
       printf("# DEBUG_HELP : EXIT RUN\n");
       struct thread *currentThread = thread_current();
       map_remove_all(&(currentThread->file_map));
-      
+      //printf("1");
+     
       struct process_info* pi = process_find(currentThread->tid, &plist);
+      //printf("2");
       pi->exit_status = (int) esp[1];
+      //printf("3");
+//Fråga om detta!
+      sema_down(&sema_plist);
+      process_remove(currentThread->tid, &plist);
+      //printf("4");
       
+      //printf("5");
+      sema_up(&sema_plist);
+      sema_up(&pi->sema_wait);
       thread_exit ();
       break;
     }
@@ -237,13 +250,19 @@ syscall_handler (struct intr_frame *f)
       timer_sleep((int64_t)esp[1]);
       break;
     }
+
+    case SYS_WAIT:
+    {
+      process_wait((int)esp[1]);
+      break;
+    }
     
     default:
     {
-      printf ("Executed an unknown system call!\n");
+      printf ("# Executed an unknown system call!\n");
       
-      printf ("Stack top + 0: %d\n", esp[0]);
-      printf ("Stack top + 1: %d\n", esp[1]);
+      printf ("# Stack top + 0: %d\n", esp[0]);
+      printf ("# Stack top + 1: %d\n", esp[1]);
       
       thread_exit ();
     }

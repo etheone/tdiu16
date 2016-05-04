@@ -161,7 +161,7 @@ thread_tick (void)
 void
 thread_print_stats (void) 
 {
-  printf ("Thread: %lld idle ticks, %lld kernel ticks, %lld user ticks\n",
+  printf ("# Thread: %lld idle ticks, %lld kernel ticks, %lld user ticks\n",
           idle_ticks, kernel_ticks, user_ticks);
 }
 
@@ -609,7 +609,7 @@ void DEBUG_thread_poweroff_check(bool force_off)
   {
     if ( thread_current() == initial_thread )
     {
-      printf ("ERROR: Main thread about to poweroff with %d other "
+      printf ("# ERROR: Main thread about to poweroff with %d other "
               "threads still running!\n"
               "ERROR: Check your implementation of process_execute() "
               "and process_wait().\n",
