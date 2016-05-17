@@ -104,13 +104,10 @@ void exit_process(int code)
 {
   printf("# DEBUG_HELP : EXIT RUN\n");
   struct thread *currentThread = thread_current();
-  map_remove_all(&(currentThread->file_map));
   struct process_info* pi = process_find(currentThread->tid, &plist);
   pi->exit_status = code;
-  sema_down(&sema_plist);
-  process_remove(currentThread->tid, &plist);
-  sema_up(&sema_plist);
-  sema_up(&pi->sema_wait);
+  //sema_down(&sema_plist);
+
   thread_exit ();
 }
 

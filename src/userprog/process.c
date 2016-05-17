@@ -243,14 +243,14 @@ process_wait (int child_id)
   printf("# CHILD ID: %d\n", child_id);
   struct process_info* pi = process_find(child_id, &plist);
   if(pi != NULL && pi->parent_id == thread_current()->tid) {
-    // if(!pi->status_read) {
-    sema_down(&pi->sema_wait);
-    status = pi->exit_status;
-    sema_down(&sema_plist);
-    pi->status_read = true;
-    plist_cleanup(&plist);
-    sema_up(&sema_plist);
-      //}
+    if(!pi->status_read) {
+      sema_down(&pi->sema_wait);
+      status = pi->exit_status;
+      //sema_down(&sema_plist);
+      pi->status_read = true;
+      //plist_cleanup(&plist);
+      //sema_up(&sema_plist);
+    }
     printf("# READING STATUS OF PROCESS: %d\n", child_id);
 
     //remove_child_process_after_read_exit(child_id, &plist);
@@ -293,7 +293,15 @@ process_cleanup (void)
   struct process_info* pi = process_find(cur->tid, &plist);
   if(pi != NULL) {
     status = pi->exit_status;
+
+
+    //sema_up(&sema_plist);
+    sema_up(&pi->sema_wait);
   }
+
+  map_remove_all(&(cur->file_map));
+  process_remove(cur->tid, &plist);
+
   
   printf("%s: exit(%d)\n", thread_name(), status);
   
@@ -315,10 +323,10 @@ process_cleanup (void)
 
   //plist_print(&plist);
   //Remove dead processes from plist
-  sema_down(&sema_plist);
+  //sema_down(&sema_plist);
   plist_cleanup(&plist); 
   //plist_print(&plist);
-  sema_up(&sema_plist);
+  //sema_up(&sema_plist);
   debug("%s#%d: process_cleanup() DONE with status %d\n",
         cur->name, cur->tid, status);
 }

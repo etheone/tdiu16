@@ -53,7 +53,7 @@ void process_remove(pid_t id, struct list* plist)
 void plist_cleanup(struct list* plist)
 {
   lock_acquire(&plist_lock);
-  plist_print(plist);
+  //plist_print(plist);
   struct list_elem* e;
   for(e = list_begin(plist); e != list_end(plist);)
   {
@@ -83,7 +83,7 @@ void plist_cleanup(struct list* plist)
     }
     
   }
-  plist_print(plist);
+  //plist_print(plist);
   lock_release(&plist_lock);
 }
 
