@@ -1,0 +1,45 @@
+1) Katalogen är tom. Två processer lägger till filen “kalle.txt” samtidigt. Är det efteråt garanterat
+att katalogen innehåller endast en fil “kalle.txt”?
+
+
+2) Katalogen innehåller en fil “kalle.txt”. Två processer tar bort “kalle.txt”, och en process lägger
+samtidigt till “nisse.txt”. Är det efteråt garanterat att katalogen innehåller endast fil “nisse.txt”?
+
+1) och 2): Processer behöver invänta sin tur för att läsa/skriva till Inode (read write semaphore) för
+att garantera korrekt resultat efter att läsning/skrivning är gjort.
+
+
+3) Systemets globala inode-lista är tom. Tre processer öppnar samtidigt filen “kalle.txt”. Är det
+garanterat att inode-listan sedan innehåller endast en cachad referens till filen, med
+open_cnt lika med 3?
+
+Öppnas samma fil samtidigt av tre processer bör inodelistan enbart innehålla en (? (eventuellt fler?))
+cachad referens till filen, dock riskerar open_cnt att få fel värde pga avbrott.
+
+
+
+4) Systemets globala inode-lista innehåller en referens till “kalle.txt” med open_cnt lika med
+1. En process stänger filen samtidigt som en annan process öppnar filen. Är det garanterat att
+inode-listan efteråt innehåller samma information?
+
+Samma som ovan. Endast en fil får öppna samma fil åt gången. Fler får ha filen öppen/stängd samtidigt men
+själva öppningen av filen måste ske av en process i taget.
+
+
+5) Free-map innehåller två sekvenser med 5 lediga block. Två processer skapar samtidigt två filer
+som behöver 5 lediga block. Är det efteråt garanterat att filerna har fått var sin sekvens lediga
+block?
+
+Nae, vi måste se till att endast en process åt gången kan skapa filer (i samma inode).
+
+
+
+6) Katalogen innehåller en fil “kalle.txt”. Systemets globala inode-lista innehåller en referens till
+samma fil med open_cnt lika med 1. Free-map har 5 block markerade som upptagna. En
+process tar bort filen “kalle.txt” samtidigt som en annan process stänger filen “kalle.txt”. Är det
+efteråt garanterat att inode-listan är tom, att free-map har 5 nya lediga block, och att katalogen
+är tom?
+
+
+
+7) Liknande frågor skall du själv ställa dig i relation till din process-lista och till din(a) fil-list(or).

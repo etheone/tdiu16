@@ -4,10 +4,12 @@
 #include "plist.h"
 
 //struct list plist;
+struct lock plist_lock;
 
 void plist_init(struct list* plist)
 {
   list_init(plist);
+  lock_init(&plist_lock);
 }
 
 pid_t process_insert(struct process_info* process_to_insert, struct list* plist)
@@ -16,14 +18,15 @@ pid_t process_insert(struct process_info* process_to_insert, struct list* plist)
   struct plist_elem* plist_elem = (struct plist_elem*) malloc(sizeof(struct plist_elem));
   plist_elem->pinfo = *process_to_insert;
   sema_init(&(plist_elem->pinfo.sema_wait), 0);
+  lock_acquire(&plist_lock);
   list_push_back(plist, &plist_elem->elem);
-  
+  lock_release(&plist_lock);
   return plist_elem->pinfo.proc_id;
 }
 
 void process_remove(pid_t id, struct list* plist)
 {
- 
+  lock_acquire(&plist_lock);
   struct list_elem* e;
   for(e = list_begin(plist); e != list_end(plist);)
   {
@@ -43,11 +46,13 @@ void process_remove(pid_t id, struct list* plist)
     
     e = list_next(e);
   }
+  lock_release(&plist_lock);
   
 }
 
 void plist_cleanup(struct list* plist)
 {
+  lock_acquire(&plist_lock);
   plist_print(plist);
   struct list_elem* e;
   for(e = list_begin(plist); e != list_end(plist);)
@@ -79,10 +84,12 @@ void plist_cleanup(struct list* plist)
     
   }
   plist_print(plist);
+  lock_release(&plist_lock);
 }
 
 struct process_info* process_find(pid_t id, struct list* plist)
 {
+  lock_acquire(&plist_lock);
   struct list_elem* e;
   for(e = list_begin(plist); e != list_end(plist);)
   {
@@ -92,17 +99,20 @@ struct process_info* process_find(pid_t id, struct list* plist)
     if(pi->proc_id == id)
     {
       //printf("Returned process info for %d", id);
+      lock_release(&plist_lock);
       return pi;
     }
 
     e = list_next(e);
   }
   //printf("Did not find process %d", id);
+  lock_release(&plist_lock);
   return NULL;
 }
 
 void remove_child_process_after_read_exit(pid_t id, struct list* plist)
 {
+  lock_acquire(&plist_lock);
   struct list_elem* e;
   for(e = list_begin(plist); e != list_end(plist);)
   {
@@ -116,6 +126,7 @@ void remove_child_process_after_read_exit(pid_t id, struct list* plist)
     }
     e = list_next(e);
   }
+  lock_release(&plist_lock);
 
 }
 

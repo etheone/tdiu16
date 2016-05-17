@@ -84,11 +84,7 @@ syscall_handler (struct intr_frame *f)
 
     case SYS_CREATE:
     {
-      if(filesys_create((char*)esp[1], esp[2])) {
-	f->eax = true;
-      } else {
-	f->eax = false;
-      }
+      f->eax = filesys_create((char*)esp[1], esp[2]);
       break;
     }
 
@@ -241,7 +237,7 @@ syscall_handler (struct intr_frame *f)
 
     case SYS_EXEC:
     {
-      process_execute((char*)esp[1]);
+      f->eax = process_execute((char*)esp[1]);
       break;
     }
 
@@ -253,7 +249,7 @@ syscall_handler (struct intr_frame *f)
 
     case SYS_WAIT:
     {
-      process_wait((int)esp[1]);
+      f->eax = process_wait((int)esp[1]);
       break;
     }
     
