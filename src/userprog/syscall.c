@@ -46,10 +46,94 @@ const int argc[] = {
   0
 };
 
+bool verify_fix_length(void* start, int length)
+{
+  void* end = (char*)start + length;
+  void* page_check = NULL;
+
+  while(start < end)
+  {
+    if(page_check == pg_round_down(start))
+    {
+      start = (char*) start + 1;
+      continue;
+    }
+    
+    page_check = pg_round_down(start);
+    
+    if(pagedir_get_page(thread_current()->pagedir, (start)) == NULL)
+    {
+      return false;
+    }
+   
+    start = (char*)start + 1;
+  }
+
+  return true;
+}
+
+/* Kontrollera alla adresser från och med start till och med den
+ * adress som först innehåller ett noll-tecken, `\0'. (C-strängar
+ * lagras på detta sätt.) */
+bool verify_variable_length(char* start)
+{
+  int i=0;
+  unsigned pg_last = pg_no(start);
+  while(true)
+  {
+    if(i==0 || pg_no(start+i) != pg_last)
+    {
+      if(pagedir_get_page(thread_current()->pagedir, (start+i)) == NULL)
+	return false;
+      if(*(start+i) == '\0')
+        break;
+    }
+    else if(pg_no(start+i) == pg_last)
+    {
+      if(*(start+i) == '\0')
+        break;
+    }
+    pg_last = pg_no(start+i);
+    ++i;
+  }
+  return true;
+
+}
+
+void exit_process(int code)
+{
+  printf("# DEBUG_HELP : EXIT RUN\n");
+  struct thread *currentThread = thread_current();
+  map_remove_all(&(currentThread->file_map));
+  struct process_info* pi = process_find(currentThread->tid, &plist);
+  pi->exit_status = code;
+  sema_down(&sema_plist);
+  process_remove(currentThread->tid, &plist);
+  sema_up(&sema_plist);
+  sema_up(&pi->sema_wait);
+  thread_exit ();
+}
+
 static void
 syscall_handler (struct intr_frame *f) 
 {
   int32_t* esp = (int32_t*)f->esp;
+
+  if(f == NULL || esp == NULL || verify_fix_length(esp, 4) == false)
+  {
+    exit_process(-1);
+  }
+
+  if(esp[0] < 0 || esp[0] > SYS_NUMBER_OF_CALLS)
+  {
+    exit_process(-1);
+  }
+
+  int number_of_args = argc[esp[0]];
+
+  if(verify_fix_length(esp+1, 4*number_of_args) == false) {
+    exit_process(-1);
+  }
   
   switch ( esp[0] )
   {
@@ -62,37 +146,35 @@ syscall_handler (struct intr_frame *f)
     case SYS_EXIT:
     {
       printf("# DEBUG_HELP : EXIT RUN\n");
-      struct thread *currentThread = thread_current();
-      map_remove_all(&(currentThread->file_map));
-      //printf("1");
-     
-      struct process_info* pi = process_find(currentThread->tid, &plist);
-      //printf("2");
-      pi->exit_status = (int) esp[1];
-      //printf("3");
-//Fråga om detta!
-      sema_down(&sema_plist);
-      process_remove(currentThread->tid, &plist);
-      //printf("4");
-      
-      //printf("5");
-      sema_up(&sema_plist);
-      sema_up(&pi->sema_wait);
-      thread_exit ();
+      f->eax = (int)esp[1];
+      exit_process((int)esp[1]);
       break;
     }
 
     case SYS_CREATE:
     {
+
+      if(verify_variable_length((char*)esp[1]) == false)
+      {
+	exit_process(-1);
+      }
+      
       f->eax = filesys_create((char*)esp[1], esp[2]);
       break;
     }
 
     case SYS_OPEN:
     {
+
+      if(verify_variable_length((char*)esp[1]) == false)
+      {
+	exit_process(-1);
+      }
+      
       char *filename = (char*)esp[1];
       struct file *fileStruct = filesys_open(filename);
       struct thread *currentThread = thread_current();
+
       
       if(fileStruct != NULL) {
 	int fd = map_insert(&(currentThread->file_map), fileStruct);
@@ -106,6 +188,12 @@ syscall_handler (struct intr_frame *f)
 
     case SYS_REMOVE:
     {
+
+      if(verify_variable_length((char*)esp[1]) == false)
+      {
+	exit_process(-1);
+      }
+      
       f->eax = filesys_remove((void*)esp[1]);
       
       break;
@@ -128,6 +216,12 @@ syscall_handler (struct intr_frame *f)
       {
 	int size = esp[3];
 	char* buffer = (char*)esp[2];
+
+	if(verify_fix_length((char*)esp[2], esp[3]) == false)
+	{
+	  exit_process(-1);
+	}
+		
 	if (esp[1] == STDIN_FILENO) 
 	{
 	  int i;
@@ -161,6 +255,12 @@ syscall_handler (struct intr_frame *f)
       }
     case SYS_WRITE:
       {
+
+	if(verify_fix_length((char*)esp[2], esp[3]) == false)
+	{
+	  exit_process(-1);
+	}
+	
 	if (esp[1] == STDOUT_FILENO)
 	{
 	    putbuf((char*)esp[2], esp[3]);
@@ -237,6 +337,12 @@ syscall_handler (struct intr_frame *f)
 
     case SYS_EXEC:
     {
+
+      if(verify_variable_length((char*)esp[1]) == false)
+      {
+	exit_process(-1);
+      }
+      
       f->eax = process_execute((char*)esp[1]);
       break;
     }

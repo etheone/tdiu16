@@ -70,12 +70,12 @@ void plist_cleanup(struct list* plist)
       //printf("FREED THE WORLD");
       free(pi);
     }
-    else if(pi->status_read == true) {
+    /* else if(pi->status_read == true) {
       //printf("# hej #######process %d status read %d", pi->proc_id, pi->status_read);
       //printf("Removing process #%d with status read %d\n", pi->proc_id, pi->status_read);
       e = list_remove(e);
       free(pi);
-    }
+      }*/
     else {
       
 

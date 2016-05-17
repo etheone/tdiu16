@@ -240,7 +240,7 @@ process_wait (int child_id)
   debug("%s#%d: process_wait(%d) ENTERED\n",
         cur->name, cur->tid, child_id);
   /* Yes! You need to do something good here ! */
-  printf("# CHILD ID: %d", child_id);
+  printf("# CHILD ID: %d\n", child_id);
   struct process_info* pi = process_find(child_id, &plist);
   if(pi != NULL && pi->parent_id == thread_current()->tid) {
     // if(!pi->status_read) {
