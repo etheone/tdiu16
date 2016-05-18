@@ -43,13 +43,18 @@ const int argc[] = {
   /* not implemented */
   2, 1,    1, 1, 2, 1, 1,
   /* extended */
-  0
+  1, 0
 };
 
 bool verify_fix_length(void* start, int length)
 {
+
+  
   void* end = (char*)start + length;
   void* page_check = NULL;
+
+  if(!is_user_vaddr(start))
+    return false;
 
   while(start < end)
   {
@@ -70,6 +75,29 @@ bool verify_fix_length(void* start, int length)
   }
 
   return true;
+  
+  /*if(start == NULL || length < 0)
+    return false;
+  if(!is_user_vaddr(start))
+    return false;
+  int i=0;
+  if(pagedir_get_page(thread_current()->pagedir, (buf)) == NULL)
+    return false;
+  unsigned pg_last = pg_no(buf);
+  for(i=0;i<length;++i)
+    {
+      if(pg_no(buf) != pg_last)
+	{
+	  if(!is_user_vaddr(buf))
+	    return false;
+	  if(pagedir_get_page(thread_current()->pagedir, (buf)) == NULL)
+	    return false;
+	}
+      pg_last = pg_no(buf);
+      buf = (char*)buf + 1;
+    }
+  return true;
+  */
 }
 
 /* Kontrollera alla adresser från och med start till och med den
@@ -107,6 +135,7 @@ void exit_process(int code)
   struct process_info* pi = process_find(currentThread->tid, &plist);
   pi->exit_status = code;
   //sema_down(&sema_plist);
+  //plist_cleanup(&plist);
 
   thread_exit ();
 }
@@ -126,9 +155,9 @@ syscall_handler (struct intr_frame *f)
     exit_process(-1);
   }
 
-  int number_of_args = argc[esp[0]];
+  int number_of_args = argc[esp[0]] + 1;
 
-  if(verify_fix_length(esp+1, 4*number_of_args) == false) {
+  if(verify_fix_length(esp + 1, 4 * number_of_args) == false) {
     exit_process(-1);
   }
   
@@ -142,23 +171,33 @@ syscall_handler (struct intr_frame *f)
     }
     case SYS_EXIT:
     {
-      printf("# DEBUG_HELP : EXIT RUN\n");
+      //printf("# DEBUG_HELP : EXIT RUN\n");
       f->eax = (int)esp[1];
       exit_process((int)esp[1]);
-      break;
+      
     }
-
+    break;
     case SYS_CREATE:
     {
-
+      if((char*)esp[1] == NULL)
+	{
+	  exit_process(-1);
+	}
+      bool file_created;
       if(verify_variable_length((char*)esp[1]) == false)
-      {
-	exit_process(-1);
-      }
+	{
+	  exit_process(-1);
+	}
+      else
+	{
+	  file_created = filesys_create((char*)esp[1], esp[2]);
+	}
       
-      f->eax = filesys_create((char*)esp[1], esp[2]);
-      break;
+      f->eax = file_created;
+      return;
+      
     }
+    break;
 
     case SYS_OPEN:
     {
@@ -192,9 +231,10 @@ syscall_handler (struct intr_frame *f)
       }
       
       f->eax = filesys_remove((void*)esp[1]);
+      return;
       
-      break;
     }
+    break;
 
     case SYS_CLOSE:
     {

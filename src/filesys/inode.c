@@ -10,6 +10,7 @@
 #include "threads/synch.h"
 
 struct lock inode_list_lock;
+//struct lock inode_open_lock;
 
 /* Identifies an inode. */
 #define INODE_MAGIC 0x494e4f44
@@ -71,6 +72,7 @@ inode_init (void)
 {
   list_init (&open_inodes);
   lock_init(&inode_list_lock);
+  //lock_init(&inode_open_lock);
 }
 
 /* Initializes an inode with LENGTH bytes of data and
@@ -122,6 +124,7 @@ inode_open (disk_sector_t sector)
 {
   struct list_elem *e;
   struct inode *inode;
+
 
   
   /* Check whether this inode is already open. */
@@ -195,16 +198,16 @@ inode_close (struct inode *inode)
   if (inode == NULL)
     return;
 
-    
+  lock_acquire(&inode_list_lock);
   /* Release resources if this was the last opener. */
   lock_acquire(&(inode->open_cnt_lock));
   if (inode->open_cnt-- == 0)
     {
       lock_release(&(inode->open_cnt_lock));
-      lock_acquire(&inode_list_lock);
+      
       /* Remove from inode list. */
       list_remove (&inode->elem);
-      lock_release(&inode_list_lock);
+
  
       /* Deallocate blocks if the file is marked as removed. */
       if (inode->removed) 
@@ -215,10 +218,11 @@ inode_close (struct inode *inode)
         }
 
       free (inode);
-      return;
+      //return;
     } else {
     
     lock_release(&inode->open_cnt_lock);
+    lock_release(&inode_list_lock);
   }
 }
 

@@ -18,8 +18,7 @@ enum
     SYS_SEEK,                   /* Change position in a file. */
     SYS_TELL,                   /* Report current position in a file. */
     SYS_CLOSE,                  /* Close a file. */
-    SYS_SLEEP,
-    SYS_PLIST,
+
 
     /* Memory mapping system calls. */
     SYS_MMAP,                   /* Map a file into memory. */
@@ -31,6 +30,9 @@ enum
     SYS_READDIR,                /* Reads a directory entry. */
     SYS_ISDIR,                  /* Tests if a fd represents a directory. */
     SYS_INUMBER,                /* Returns the inode number for a fd. */
+
+    SYS_SLEEP,
+    SYS_PLIST,
     
     SYS_NUMBER_OF_CALLS
   };

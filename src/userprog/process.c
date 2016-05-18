@@ -240,21 +240,30 @@ process_wait (int child_id)
   debug("%s#%d: process_wait(%d) ENTERED\n",
         cur->name, cur->tid, child_id);
   /* Yes! You need to do something good here ! */
-  printf("# CHILD ID: %d\n", child_id);
-  struct process_info* pi = process_find(child_id, &plist);
-  if(pi != NULL && pi->parent_id == thread_current()->tid) {
-    if(!pi->status_read) {
-      sema_down(&pi->sema_wait);
-      status = pi->exit_status;
-      //sema_down(&sema_plist);
-      pi->status_read = true;
-      //plist_cleanup(&plist);
-      //sema_up(&sema_plist);
-    }
-    printf("# READING STATUS OF PROCESS: %d\n", child_id);
+  //printf("# CHILD ID: %d\n", child_id);
 
-    //remove_child_process_after_read_exit(child_id, &plist);
-  }
+  struct process_info* pi = process_find(child_id, &plist);
+
+  if(pi != NULL && pi->parent_id == cur->tid) 
+    {
+      if(!pi->status_read)  // fixes if we wait twice
+	{
+	  sema_down(&pi->sema_wait);
+	  status = pi->exit_status;
+	  //sema_down(&sema_plist);
+	  pi->status_read = true;
+	  process_remove(pi->proc_id, &plist);
+	  //plist_cleanup(&plist);
+	  //sema_up(&sema_plist);
+	} 
+      else
+	{
+	  return status;
+	}
+      //printf("# READING STATUS OF PROCESS: %d\n", child_id);
+
+      //remove_child_process_after_read_exit(child_id, &plist);
+    }
   
   debug("%s#%d: process_wait(%d) RETURNS %d\n",
         cur->name, cur->tid, child_id, status);
@@ -283,6 +292,20 @@ process_cleanup (void)
   
   debug("%s#%d: process_cleanup() ENTERED\n", cur->name, cur->tid);
   
+  struct process_info* pi = process_find(cur->tid, &plist);
+  if(pi != NULL) {
+    status = pi->exit_status;
+
+    if(pi->parent_alive <= 0) // remove if parent is dead
+      {
+	process_remove(cur->tid, &plist);
+      }
+
+    //sema_up(&sema_plist);
+    sema_up(&pi->sema_wait);
+  }
+  //plist_cleanup(&plist); 
+
   /* Later tests DEPEND on this output to work correct. You will have
    * to find the actual exit status in your process list. It is
    * important to do this printf BEFORE you tell the parent process
@@ -290,19 +313,7 @@ process_cleanup (void)
    * that may sometimes poweroff as soon as process_wait() returns,
    * possibly before the printf is completed.)
    */
-  struct process_info* pi = process_find(cur->tid, &plist);
-  if(pi != NULL) {
-    status = pi->exit_status;
-
-
-    //sema_up(&sema_plist);
-    sema_up(&pi->sema_wait);
-  }
-
-  map_remove_all(&(cur->file_map));
-  process_remove(cur->tid, &plist);
-
-  
+  //printf("%s: exit(%d)\n", thread_name(), status);
   printf("%s: exit(%d)\n", thread_name(), status);
   
   /* Destroy the current process's page directory and switch back
@@ -324,7 +335,8 @@ process_cleanup (void)
   //plist_print(&plist);
   //Remove dead processes from plist
   //sema_down(&sema_plist);
-  plist_cleanup(&plist); 
+ 
+  map_remove_all(&(cur->file_map));
   //plist_print(&plist);
   //sema_up(&sema_plist);
   debug("%s#%d: process_cleanup() DONE with status %d\n",
