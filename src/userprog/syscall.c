@@ -105,12 +105,16 @@ bool verify_fix_length(void* start, int length)
  * lagras på detta sätt.) */
 bool verify_variable_length(char* start)
 {
+  if(!is_user_vaddr(start))
+    return false;
   int i=0;
   unsigned pg_last = pg_no(start);
   while(true)
   {
     if(i==0 || pg_no(start+i) != pg_last)
     {
+      if(!is_user_vaddr(start))
+	return false;
       if(pagedir_get_page(thread_current()->pagedir, (start+i)) == NULL)
 	return false;
       if(*(start+i) == '\0')
@@ -378,6 +382,7 @@ syscall_handler (struct intr_frame *f)
       if(verify_variable_length((char*)esp[1]) == false)
       {
 	exit_process(-1);
+	break;
       }
       
       f->eax = process_execute((char*)esp[1]);

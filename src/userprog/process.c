@@ -302,7 +302,7 @@ process_cleanup (void)
       }
 
     //sema_up(&sema_plist);
-    sema_up(&pi->sema_wait);
+    
   }
   //plist_cleanup(&plist); 
 
@@ -337,10 +337,14 @@ process_cleanup (void)
   //sema_down(&sema_plist);
  
   map_remove_all(&(cur->file_map));
+ 
   //plist_print(&plist);
   //sema_up(&sema_plist);
   debug("%s#%d: process_cleanup() DONE with status %d\n",
         cur->name, cur->tid, status);
+
+  if(pi != NULL)
+    sema_up(&pi->sema_wait);
 }
 
 /* Sets up the CPU for running user code in the current
